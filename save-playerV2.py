@@ -4,8 +4,12 @@ import pygame
 import sys
 import random
 
-from tkinter import *
-from tkinter import messagebox
+try:
+    from tkinter import *
+    from tkinter import messagebox
+except:
+    from Tkinter import *
+    import tkMessageBox as messagebox
 
 # activate the pygame library
 # initiate pygame and give permission
@@ -14,6 +18,11 @@ pygame.init()
 
 WIDTH = 800
 HEIGHT = 600
+
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
 
 SPEED = 5
 
@@ -24,7 +33,6 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 # set the pygame window name
 pygame.display.set_caption('Save Player : Ganesh')
 
-game_over = False
 current_score = 0
 
 clock = pygame.time.Clock()
@@ -33,8 +41,6 @@ player_size = 50
 player_position = [WIDTH / 2 , HEIGHT - 2 * player_size]
 
 enemy_size = 50
-enemy_position = [100,0]
-enemy_list = [enemy_position]
 
 # create a font object.
 # 1st parameter is the font file
@@ -64,13 +70,13 @@ def update_score():
 def add_enemy(enemy_list):
     delay = random.random()
     if len(enemy_list) < 10 and delay < 0.1:
-        x_pos = random.randint(0,WIDTH-enemy_size)
-        y_pos = 0
-        enemy_list.append([x_pos,y_pos])
+        x_pos = random.randint(0, WIDTH - enemy_size)
+        y_pos = -50
+        enemy_list.append([x_pos, y_pos])
 
 def update_enemy_position(enemy_list):
     for idx,enemy_position in enumerate(enemy_list):
-        if enemy_position[1] >= 0 and enemy_position[1] < HEIGHT:
+        if enemy_position[1] >= -50 and enemy_position[1] < HEIGHT:
             enemy_position[1] = enemy_position[1]+SPEED
         else:
             enemy_list.pop(idx)
@@ -99,69 +105,84 @@ def detect_collision(player_position,enemy_position):
             return True
     return  False
 
-while not game_over:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            sys.exit()
-        if event.type == pygame.KEYDOWN:
-            x = player_position[0]
-            y = player_position[1]
+def game_loop():
+    global current_score
+    x = player_position[0]
+    y = player_position[1]
+    x_change = 0
 
-            if event.key == pygame.K_LEFT:
-                x = x - player_size
-            if event.key == pygame.K_RIGHT:
-                x = x + player_size
-            player_position = [x,y]
+    enemy_position = [100, -50]
+    enemy_list = [enemy_position]
 
-    screen.fill((0, 0, 0))
+    game_over = False
+    while not game_over:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    x_change = -5
+                if event.key == pygame.K_RIGHT:
+                    x_change = 5
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
+                    x_change = 0
 
-    add_enemy(enemy_list)
-    update_enemy_position(enemy_list)
+        x += x_change
 
-    # create a text suface object,
-    # on which text is drawn on it.
-    text = font.render("Score: " + str(current_score) , True, (0, 255, 0), (0, 0, 255))
+        screen.fill(BLACK)
 
-    # create a rectangular object for the
-    # text surface object
-    textRect = text.get_rect()
-    # set the center of the rectangular object.
-    textRect.center = (WIDTH - 2 * player_size , HEIGHT - 2 * player_size)
+        add_enemy(enemy_list)
+        update_enemy_position(enemy_list)
 
-    # copying the text surface object
-    # to the display surface/screen object
-    # at the center coordinate.
-    screen.blit(text, textRect)
+        # create a text suface object,
+        # on which text is drawn on it.
+        text = font.render("Score: " + str(current_score) , True, GREEN, BLUE)
 
-    #print(current_score)
+        # create a rectangular object for the
+        # text surface object
+        textRect = text.get_rect()
+        # set the center of the rectangular object.
+        textRect.center = (WIDTH - 2 * player_size , HEIGHT - 2 * player_size)
 
-    if collision_check(enemy_list,player_position):
-        window = Tk()
-        window.eval('tk::PlaceWindow %s center' % window.winfo_toplevel())
-        window.withdraw()
+        # copying the text surface object
+        # to the display surface/screen object
+        # at the center coordinate.
+        screen.blit(text, textRect)
 
-        if messagebox.askyesno("Question","Want To Start New Game"):
-            current_score = 0
-            SPEED = 5
-            player_position = [WIDTH / 2, HEIGHT - 2 * player_size]
+        #print(current_score)
 
-            for idx, enemy_position in enumerate(enemy_list):
-                enemy_list.pop(idx)
-            window.deiconify()
-            window.destroy()
-            window.quit()
+        if collision_check(enemy_list, [x, y]):
+            window = Tk()
+            window.withdraw()
 
-            enemy_list = [enemy_position]
-            #print(enemy_list)
-            continue
-        else:
-            game_over = True
-            break
+            if messagebox.askyesno("You lost","Want to start new game?"):
+                current_score = 0
+                SPEED = 5
+                [x, y] = [WIDTH / 2, HEIGHT - 2 * player_size]
 
-    draw_enemy(enemy_list)
+                '''for idx, enemy_pos in enumerate(enemy_list):
+                    print idx, enemy_pos
+                    enemy_list.pop(idx)'''
 
-    pygame.draw.rect(screen, (255, 0, 0), (player_position[0],player_position[1], 50, 50))
+                del enemy_list[:]
 
-    clock.tick(30)
-    # Draws the surface object to the screen.
-    pygame.display.update()
+                window.destroy()
+                window.quit()
+
+                enemy_list = [enemy_position]
+                #print(enemy_list)
+                continue
+            else:
+                game_over = True
+                break
+
+        draw_enemy(enemy_list)
+
+        pygame.draw.rect(screen, RED, (x, y, player_size, player_size))
+
+        clock.tick(30)
+        # Draws the surface object to the screen.
+        pygame.display.update()
+
+game_loop()

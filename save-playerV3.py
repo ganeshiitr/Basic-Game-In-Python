@@ -4,9 +4,12 @@ import pygame
 import sys
 import random
 
-from tkinter import *
-from tkinter import messagebox
-
+try:
+    from tkinter import *
+    from tkinter import messagebox
+except:
+    from Tkinter import *
+    import tkMessageBox as messagebox
 
 
 # pip3 install mysql-connector
